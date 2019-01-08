@@ -5,7 +5,7 @@ Social science researchers routinely report the discriminant validity and reliab
 
 INPUT AND OUTPUT
 ===============
-MQAssessor supports three types of input data. First, raw data stored in Excel or csv format. Second, variance-covariance data stored in Excel or csv format. Third, existing MQAssessor analysis files.\
+MQAssessor supports three types of input data. First, raw data stored in Excel or csv format, where the first row must be the names of variables. Second, variance-covariance data stored in Excel or csv format, where the first row must be the names of variables. Third, existing MQAssessor analysis files.\
 MQAssessor can save the results in two formats: text (* .txt) and Excel file. You can also save an existing analysis.
 
 HOW THIS IS WRITTEN?
