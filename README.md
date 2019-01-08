@@ -10,4 +10,6 @@ MQAssessor can save the results in two formats: text (* .txt) and Excel file. Yo
 
 HOW THIS IS WRITTEN?
 ================
-The source code is written in python3. I do not have much programming experience, and perhaps from a software professional's point of view, I think there's plenty of room to make this code more efficient. Any comments or participation are welcome.
+This source code is written in python3.
+I only uploaded executable files in Windows. Run the source code on other OS such as Mac or Linux.
+I do not have much programming experience, and perhaps from a software professional's point of view, I think there's plenty of room to make this code more efficient. Any comments or participation are welcome.
