@@ -64,7 +64,7 @@ def GUI():
     help_menu.add_command(label="About MQAssessor", command=about_mq)
     menu_bar.add_cascade(label="Help", menu=help_menu)
     
-    #win.iconbitmap('taichi.ico')
+    
     win.mainloop()
 
 def open_raw():
@@ -76,7 +76,7 @@ def open_raw():
     if "xls" in FileName:
         OpenFile = pd.read_excel(FileName)
     elif "csv" in FileName:
-        OpenFile = pd.read_csv(FileName)
+        OpenFile = pd.read_csv(FileName, engine='python')
     Labels = OpenFile.columns
     Data = OpenFile.values
     obsvar(Labels, Data, isRaw=True)
@@ -92,7 +92,7 @@ def open_cov():
     if "xls" in FileName:
         OpenFile = pd.read_excel(FileName)
     elif "csv" in FileName:
-        OpenFile = pd.read_csv(FileName)
+        OpenFile = pd.read_csv(FileName, engine='python')
     Labels = OpenFile.columns
     Data = OpenFile.values
     obsvar(Labels, Data, isRaw=False)
@@ -102,7 +102,7 @@ def open_cov():
 def open_model():
     FileName = askopenfilename(initialdir="/", filetypes=[(
         "MQAssessor File", "*.mqa")])
-    OpenFile = pd.read_csv(FileName)
+    OpenFile = pd.read_csv(FileName, engine='python')
     Labels = list(OpenFile.columns)
     Data = list(OpenFile.values)
     global ObsNamesTemp
@@ -581,6 +581,8 @@ class RunOption(Toplevel):
         self.Alpha_Chosen.grid(row=1, column=4, padx=10, pady=10,)
         self.Alpha_Chosen.set("0.001") #  assigning a default value
         self.Alpha_Chosen.bind("<<ComboboxSelected>>",self.comborad1)
+        #lbl2 = tk.Label(frame1, text="Alpha will be corrected using the Bonferroni's formula")
+        #lbl2.grid(row=2, column=0, columnspan=5, padx=10, pady=10,sticky=tk.W)
         
         # Cutoff point
         frame2 = ttk.Labelframe(self,text="Cutoff point")
@@ -653,8 +655,7 @@ class RunOption(Toplevel):
         btn1 = tk.Button(self, text="OK", height=1, width =10, command=self.ok)
         btn1.grid(row=5, column=0, padx=10, pady=10)
         
-        self.iconbitmap('taichi.ico')
-
+        
     def comborad1(self, event):
         self.rad1.deselect()
         self.rad2.deselect()
@@ -974,6 +975,12 @@ correlations were significantly smaller than the cutoff you set.\n")
         self.table(self.txt3, DV1, isList=True, row=NumOfComparison + 2)
         
         if isCmt:
+            Bonf = get_bonferroni()
+            self.txt3.insert("end", "\n The familywise confidence level you set is " + format(Alpha, ".3f") +
+".\n The pairwise alpha corrected by Bonferroni formula is " + format(Bonf["NewAlpha"], ("4.%df")%(Dcm)) +
+".\n If the chi-square difference between the original model and \
+the constrained model is greater than " + format(Bonf["Chi2"], ("4.%df")%(Dcm)) +
+", \nit is statistically significant.\n")
             Cmt_DV = "\nNumerous techniques for discriminant validity have been \
 used, but there has been insufficient discussion of which technique is best. \
 The results presented above represent an exemplary procedure based on our \
@@ -1262,7 +1269,6 @@ tables above are an example."
             self.get_cmt(self.txt5, Cmt_tbl)
 
         # Change icon
-        self.iconbitmap('taichi.ico')
         
         global AllOutput
         AllOutput = self.txt1.get('1.0', 'end') + self.txt2.get('1.0', 'end') + self.txt3.get('1.0', 'end') + self.txt4.get('1.0', 'end') + self.txt5.get('1.0', 'end') 
@@ -1590,7 +1596,6 @@ def chi2diff_allpairs(MinSol, ObjFunVal, NumOfParam, Cutoff):
     Chi2Fix = NumOfComparison * [0]
     CFIFix = NumOfComparison * [0]
     count = 0
-    Chi2alpha = chi2.ppf(1 - Alpha, 1)  # 3.84 if Alpha == 0.05
     for i in range(NumOfLtnVar):
         for j in range(i + 1, NumOfLtnVar):
             InitialGuess = np.ones(NumOfParam - 1)
@@ -1603,6 +1608,7 @@ def chi2diff_allpairs(MinSol, ObjFunVal, NumOfParam, Cutoff):
             # NotSig stores the position of the PhiVector when it is
             # fixed with a cutoff and does not show significant
             # chi-square difference with the original model.
+            Bonf = get_bonferroni()
                 
             if abs(PhiMatrix[i][j]) > Cutoff:
                 # The location of the PhiVector with a correlation
@@ -1614,7 +1620,7 @@ def chi2diff_allpairs(MinSol, ObjFunVal, NumOfParam, Cutoff):
             # model and the Chi square is not significant, pass
             # the location to NotSig.
             
-            elif StatsFix["Chi2"] < Stats["Chi2"] + Chi2alpha:
+            elif StatsFix["Chi2"] < Stats["Chi2"] + Bonf["Chi2"]:
                 CompCutoff[count] = "NotSig"
             else:
                 CompCutoff[count] = "Sig"
@@ -1625,6 +1631,18 @@ def chi2diff_allpairs(MinSol, ObjFunVal, NumOfParam, Cutoff):
     Dict["CompCutoff"] = CompCutoff
     Dict["Chi2Fix"] = Chi2Fix
     Dict["CFIFix"] = CFIFix
+    return Dict
+
+# This function performs bonferroni correction and returns the calibrated
+# critical value. Refer to the article "Discriminant validity: what is it and
+# how to assess".
+def get_bonferroni():
+    NumOfPairwiseComparison = NumOfLtnVar * (NumOfLtnVar - 1) / 2
+    NewAlpha = 1 - (1 - Alpha) ** (1 / NumOfPairwiseComparison)
+    Chi2 = chi2.ppf(1 - NewAlpha, 1)
+    Dict = dict()
+    Dict["NewAlpha"] = NewAlpha
+    Dict["Chi2"] = Chi2
     return Dict
 
 
